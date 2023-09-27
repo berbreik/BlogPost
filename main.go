@@ -4,47 +4,59 @@ package main
 
 import (
 	"BlogPost/db"
+	"BlogPost/handler"
+	"BlogPost/service"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
+	"os"
 )
 
 func main() {
-	dbConn, err := db.Init("host=your-db-host user=your-db-user dbname=your-db-name sslmode=disable password=your-db-password")
+	// Load configuration from environment variables
+	dbConnectionString := os.Getenv("DB_CONNECTION_STRING")
+	port := os.Getenv("PORT")
+	if dbConnectionString == "" {
+		log.Fatal("DB_CONNECTION_STRING environment variable is not set")
+	}
+	if port == "" {
+		port = "8080" // Default port
+	}
+
+	dbConn, err := db.Init(dbConnectionString)
 	if err != nil {
 		log.Fatal("Failed to initialize the database: ", err)
 	}
-	defer db.CloseDB()
+	defer dbConn.Close()
 
-	db.AutoMigrate(&BlogPost{})
+	// Create a new BlogPostService using the dbConn
+	blogPostService := service.NewBlogPostService(dbConn)
+
+	// Create a new router
 	router := mux.NewRouter()
 
-	// Create a BlogPostService instance using the interface
-	blogPostService := NewBlogPostService(db)
-
-	// Middleware for logging requests
+	// Use request logging middleware
 	router.Use(loggingMiddleware)
 
-	// Routes
-	router.HandleFunc("/posts", func(w http.ResponseWriter, r *http.Request) {
-		GetPosts(w, r, blogPostService)
+	// API routes for v1
+	v1 := router.PathPrefix("/v1").Subrouter()
+
+	v1.HandleFunc("/posts", func(w http.ResponseWriter, r *http.Request) {
+		handler.GetPosts(w, r, blogPostService)
 	}).Methods("GET")
-	router.HandleFunc("/posts/{id}", func(w http.ResponseWriter, r *http.Request) {
-		GetPost(w, r, blogPostService)
+	v1.HandleFunc("/posts/{id}", func(w http.ResponseWriter, r *http.Request) {
+		handler.GetPost(w, r, blogPostService)
 	}).Methods("GET")
-	router.HandleFunc("/posts", func(w http.ResponseWriter, r *http.Request) {
-		CreatePost(w, r, blogPostService)
+	v1.HandleFunc("/posts", func(w http.ResponseWriter, r *http.Request) {
+		handler.CreatePost(w, r, blogPostService)
 	}).Methods("POST")
-	router.HandleFunc("/posts/{id}", func(w http.ResponseWriter, r *http.Request) {
-		UpdatePost(w, r, blogPostService)
+	v1.HandleFunc("/posts/{id}", func(w http.ResponseWriter, r *http.Request) {
+		handler.UpdatePost(w, r, blogPostService)
 	}).Methods("PUT")
-	router.HandleFunc("/posts/{id}", func(w http.ResponseWriter, r *http.Request) {
-		DeletePost(w, r, blogPostService)
+	v1.HandleFunc("/posts/{id}", func(w http.ResponseWriter, r *http.Request) {
+		handler.DeletePost(w, r, blogPostService)
 	}).Methods("DELETE")
-	router.HandleFunc("/posts/bulk", func(w http.ResponseWriter, r *http.Request) {
-		CreateBulkPosts(w, r, blogPostService)
-	}).Methods("POST")
 
 	// Handling CORS (Cross-Origin Resource Sharing) for the API
 	headersOk := handlers.AllowedHeaders([]string{"Content-Type"})
@@ -57,11 +69,13 @@ func main() {
 	// Custom error handling
 	http.Handle("/", customErrorHandler(router))
 
-	// Serve the API on port 8080
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	// Serve the API on the specified port
+	addr := ":" + port
+	log.Printf("Server is running on port %s", port)
+	log.Fatal(http.ListenAndServe(addr, nil))
 }
 
-// Middleware for logging HTTP requests
+// Middleware for request logging
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[%s] %s %s\n", r.Method, r.URL.Path, r.RemoteAddr)

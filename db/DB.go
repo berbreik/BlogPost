@@ -3,6 +3,7 @@
 package db
 
 import (
+	"BlogPost/model"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
@@ -28,7 +29,7 @@ func Init(connectionString string) (*gorm.DB, error) {
 
 // AutoMigrate performs auto-migration for all models.
 func AutoMigrate() error {
-	if err := db.AutoMigrate(&BlogPost{}).Error; err != nil {
+	if err := db.AutoMigrate(&model.BlogPost{}).Error; err != nil {
 		return err
 	}
 
