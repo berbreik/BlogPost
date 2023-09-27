@@ -11,8 +11,6 @@ A simple RESTful API for a blogging platform built in Go and using PostgreSQL as
 - [Getting Started](#getting-started)
 - [API Endpoints](#api-endpoints)
 - [Database](#database)
-- [Contributing](#contributing)
-- [License](#license)
 
 ## Description
 
@@ -39,16 +37,16 @@ The BlogPost API is a straightforward RESTful API designed to manage blog posts.
 
    ```bash
    git clone https://github.com/berbreik/BlogPost.git
-2.
-   Set environment variables for your PostgreSQL connection:
-  ```bash
-  export DB_CONNECTION_STRING="postgresql://user:password@localhost/blogpost?sslmode=disable"
-  export PORT="8080"
+   
+2. Set environment variables for your PostgreSQL connection:
+     ```bash
+     export DB_CONNECTION_STRING="postgresql://user:password@localhost/blogpost?sslmode=disable"
+
 3. Initialize and run the application:
    ```bash
    go run main.go
 
-API Endpoints :
+## API Endpoints
 
 Retrieve a list of all blog posts
 URL: /v1/posts
@@ -69,3 +67,7 @@ Method: PUT
 Delete a blog post
 URL: /v1/posts/{id}
 Method: DELETE
+
+## Database
+   The application uses a PostgreSQL database for storing blog posts.
+   The database schema and initialization scripts can be found in the db directory.
