@@ -15,9 +15,11 @@ import (
 
 func main() {
 	// Load configuration from environment variables
-	dbConnectionString := os.Getenv("postgresql://postgres:postgres@localhost:5432/PostBlog?sslmode=disable")
+	os.Setenv("key", "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable")
+	dbConnectionString := os.Getenv("key")
 	port := os.Getenv("PORT")
 	if dbConnectionString == "" {
+		print(dbConnectionString + "=\n")
 		log.Fatal("DB_CONNECTION_STRING environment variable is not set")
 	}
 	if port == "" {
@@ -67,7 +69,7 @@ func main() {
 	http.Handle("/", handlers.CORS(headersOk, originsOk, methodsOk)(router))
 
 	// Custom error handling
-	http.Handle("/", customErrorHandler(router))
+	//http.Handle("/", customErrorHandler(router))
 
 	// Serve the API on the specified port
 	addr := ":" + port
@@ -79,19 +81,6 @@ func main() {
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[%s] %s %s\n", r.Method, r.URL.Path, r.RemoteAddr)
-		next.ServeHTTP(w, r)
-	})
-}
-
-// Custom error handling
-func customErrorHandler(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer func() {
-			if r := recover(); r != nil {
-				log.Printf("Recovering from panic: %v", r)
-				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			}
-		}()
 		next.ServeHTTP(w, r)
 	})
 }
