@@ -15,7 +15,7 @@ import (
 
 func main() {
 	// Load configuration from environment variables
-	dbConnectionString := os.Getenv("DB_CONNECTION_STRING")
+	dbConnectionString := os.Getenv("postgresql://postgres:postgres@localhost:5432/PostBlog?sslmode=disable")
 	port := os.Getenv("PORT")
 	if dbConnectionString == "" {
 		log.Fatal("DB_CONNECTION_STRING environment variable is not set")
