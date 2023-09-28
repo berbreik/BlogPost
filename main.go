@@ -8,6 +8,7 @@ import (
 	"BlogPost/service"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"github.com/jinzhu/gorm"
 	"log"
 	"net/http"
 	"os"
@@ -15,7 +16,10 @@ import (
 
 func main() {
 	// Load configuration from environment variables
-	os.Setenv("key", "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable")
+	err := os.Setenv("key", "postgres://postgres:postgres@localhost:5432/blogpostdb?sslmode=disable")
+	if err != nil {
+		return
+	}
 	dbConnectionString := os.Getenv("key")
 	port := os.Getenv("PORT")
 	if dbConnectionString == "" {
@@ -30,7 +34,12 @@ func main() {
 	if err != nil {
 		log.Fatal("Failed to initialize the database: ", err)
 	}
-	defer dbConn.Close()
+	defer func(dbConn *gorm.DB) {
+		err := dbConn.Close()
+		if err != nil {
+			log.Fatal("Failed to close the database connection: ", err)
+		}
+	}(dbConn)
 
 	// Create a new BlogPostService using the dbConn
 	blogPostService := service.NewBlogPostService(dbConn)
